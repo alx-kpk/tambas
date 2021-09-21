@@ -1,0 +1,204 @@
+openapi: 3.0.3
+info:
+  title: T-SaaS API
+  description: |
+    TAMBAS Software as a Service
+    The API for using the Banking Solution TAMBAS as a Service
+
+    All operations are require authentication.
+
+    <div>
+    <img src='https://www.cpb-software.com/wp-content/themes/CPB/images/CPB_Logo.png' width='7%'>
+    <div>
+  termsOfService: ''
+  contact:
+    name: Christoph Bach
+    url: 'https://www.cpb-software.com'
+    email: christoph.bach@cpb-software.com
+  version: 2.0.5
+servers:
+  - url: 'https://qa-tsaas-zkb.cpb.services/local'
+    description: QA Local Services
+  - url: 'https://test-tsaas-zkb.cpb.services/local'
+    description: Test Local Services
+  - url: 'https://tsaas-zkb.cpb.services/local'
+    description: Production Local Services
+security:
+  - BasicAuth: []
+tags:
+  - name: Agreement
+paths:
+  '/agreements/{agreementId}/documents':
+    get:
+      tags:
+        - Agreement
+      summary: Load document metadata for an individual Agreement
+      description: Loads a List of Document metadata
+      parameters:
+        - name: agreementId
+          in: path
+          description: Identifier of the Agreement
+          required: true
+          schema:
+            type: string
+          example: '1234567'
+        - name: $size
+          in: query
+          description: Size of the page to retrieve.
+          schema:
+            type: integer
+          example: 10
+        - name: $page
+          in: query
+          description: Number of the page to retrieve.
+          schema:
+            type: integer
+          example: 1
+        - name: $sort
+          in: query
+          description: Order in which to retrieve the results. Multiple sort criteria can be passed.
+          schema:
+            type: string
+          example: description
+        - name: documentType
+          in: query
+          description: Filter on document type.
+          schema:
+            type: string
+        - name: latestOnly
+          in: query
+          description: Filter for loading only not by TEV synced documents.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Status 200
+          headers:
+            X-Page-Count:
+              schema:
+                type: integer
+            X-Page-Number:
+              schema:
+                type: integer
+            X-Total-Count:
+              schema:
+                type: integer
+            X-Page-Size:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/documentMetadata'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/documentMetadata'
+        '400':
+          description: Status 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorContainer'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorContainer'
+        '404':
+          description: Status 404
+          content: {}
+      operationId: AgreementAgreementidDocumentsGet
+components:
+  schemas:
+    documentMetadataItem:
+      type: object
+      description: Metadata for document
+      x-tags:
+        - Document
+      properties:
+        documentMetadataId:
+          type: string
+        description:
+          type: string
+        documentUrl:
+          type: string
+          format: url
+          description: URL to archive stored document
+        documentType:
+          type: string
+        agreementId:
+          type: string
+        cashAccountId:
+          type: string
+        depositAccountId:
+          type: string
+        createdAt:
+          type: string
+          description: create date
+          format: date
+        active:
+          type: boolean
+          example: true
+        relatedPartnerIds:
+          type: array
+          items:
+            type: string
+      required:
+        - description
+        - documentType
+        - agreementId
+        - active
+    documentMetadata:
+      required:
+        - documentMetadataItem
+      type: object
+      properties:
+        documentMetadataItem:
+          type: array
+          items:
+            $ref: '#/components/schemas/documentMetadataItem'
+      x-tags:
+        - Document
+    BusinessError:
+      type: object
+      x-tags:
+        - General
+      properties:
+        errorCode:
+          type: string
+          description: A business error code
+          example: E400_INVALID_ACCOUNT
+        errorMessage:
+          type: string
+          description: A business error message
+          example: The provided account is invalid.
+        warning:
+          type: boolean
+          description: 'if true, error is only a warning'
+          example: false
+          default: false
+        properties:
+          type: array
+          description: optional error details
+          items:
+            type: string
+        origin:
+          type: string
+          description: error source
+          example: AccountBF
+    BusinessErrorContainer:
+      type: object
+      properties:
+        statusCode:
+          maximum: 599
+          minimum: 400
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessError'
+      description: This general error structure is used throughout the API.
+      x-tags:
+        - General
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
